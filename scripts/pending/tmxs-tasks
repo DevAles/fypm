@@ -22,10 +22,9 @@ open_taskwarrior() {
         tmux new-session -d -s "$TASK" -x "$TRM_COLS" -y "$TRM_LINES"
         tmux split-window -t "$TASK" -h -l 50%
         tmux split-window -t "$TASK" -v -l 50%
-        tmux split-window -t "$TASK":1.1 -v -l 50%
 
         tmux send-keys -t "$TASK":1.1 "$VIEWER" C-m
-        tmux send-keys -t "$TASK":1.3 'perpetue_cmd task projects' C-m
+        tmux send-keys -t "$TASK":1.2 'perpetue_cmd fypm ta-project l' C-m
     fi
 
     # bspc desktop -l monocle

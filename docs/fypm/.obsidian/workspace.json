@@ -25,7 +25,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Workflow/Properties/Urgency Properties.md",
+                "file": "Workflow/Properties/Behavior Properties.md",
                 "mode": "source",
                 "source": false
               }
@@ -98,7 +98,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Workflow/Properties/Urgency Properties.md",
+                "file": "Workflow/Properties/Behavior Properties.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -115,7 +115,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Workflow/Properties/Urgency Properties.md",
+                "file": "Workflow/Properties/Behavior Properties.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -138,7 +138,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Workflow/Properties/Urgency Properties.md"
+                "file": "Workflow/Properties/Behavior Properties.md"
               }
             }
           }
@@ -161,10 +161,12 @@
   },
   "active": "2e3f54fce3259996",
   "lastOpenFiles": [
+    "Workflow/Commands/Introduction.md",
+    "Roadmap.canvas",
+    "match_inforelat_and_sequence.canvas",
+    "Workflow/Properties/Urgency Properties.md",
     "Workflow/Properties/Timing Properties.md",
     "Workflow/Properties/Behavior Properties.md",
-    "Workflow/Commands/Introduction.md",
-    "Workflow/Properties/Urgency Properties.md",
     "Workflow/Commands",
     "fypm/Workflow/Properties/Urgency Properties.md",
     "fypm/Workflow/Properties/Behavior Properties.md",
@@ -174,8 +176,6 @@
     "fypm/Roadmap.canvas",
     "fypm/match_inforelat_and_sequence.canvas",
     "fypm",
-    "match_inforelat_and_sequence.canvas",
-    "Roadmap.canvas",
     "Tasks/Recurrents/Quadrant One.md",
     "Tasks/Recurrents/Quadrant Three.md",
     "Tasks/Recurrents/Quadrant Two.md",

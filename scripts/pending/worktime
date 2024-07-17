@@ -85,11 +85,6 @@ update_vit_twui_session() {
         tmux send-keys -t TaskWarrior:1.1 "$VIEWER_QUIT" C-m
         sleep 1
         tmux send-keys -t TaskWarrior:1.1 "$VIEWER" C-m
-    else
-        xdotool mousemove 2400 450
-        bspc desktop -f "^5"
-
-        taopen > /dev/null 2& disown %1
     fi
 }
 
@@ -102,7 +97,7 @@ fi
 
 
 # Change this based on your worktimes and actions to do at each worktime
-bspasroot sudo -v
+# bspasroot sudo -v
 
 case $1 in
     "Highlevel")
