@@ -4,12 +4,20 @@ color.tag.NoControl=bold
 color.tag.Divisory=underline rgb555 on rgb001
 color.tag.PARENT=on rgb430
 
-color.completed=on rgb030
-color.deleted=on rgb300
+color.completed=on rgb010
+color.deleted=on rgb100
 color.scheduled=on rgb510
-color.overdue=bold on rgb100
+color.overdue=bold on rgb111
 color.active=underline bold on rgb325
 
 color.uda.STYLE.Idle=rgb111
-color.uda.TYPE.SubTask=on rgb222
-color.tag.MOTHER=on rgb111
+
+# -- Custom colors --
+color.project.School=rgb530
+color.project.Health.Workout=rgb325
+color.project.Health.Cardio=rgb325
+color.project.Health.Diet=rgb241
+color.keyword.Sleep=rgb444
+color.project.Study=rgb500
+color.project.Programming=rgb305
+color.project.PD=rgb415

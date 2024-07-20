@@ -57,3 +57,18 @@ alias taandl="task rc.report.next.labels=ID,Type,WT,Due,Description,Urg rc.repor
 # TimeWarrior
 alias tiils='timew summary :ids'
 
+# Hotfix alias
+alias sft_rst_poly='polybar-msg cmd restart'
+alias frc_rst_poly='killall -s KILL polybar && bspbar & disown'
+
+# Custom aliases
+alias taadd-pism-subject='f() { fypm ta-add $1 PISM.III Apollonian Objective +Study $2 $3 }; f'
+alias taadd-pism-closed-exam-1='f() { fypm ta-add $1 PISM.III Apollonian Objective +Exams +Study +Math +Biology +Portuguese +Literature }; f'
+alias taadd-pism-closed-exam-2='f() { fypm ta-add $1 PISM.III Apollonian Objective +Exams +Study +Physics +Chemistry +Geography +Literature }; f'
+
+alias taadd-pism-opened-exam-1='f() { fypm ta-add $1 PISM.III Apollonian Objective +Exams +Study +Math +Portuguese }; f'
+alias taadd-pism-opened-exam-2='f() { fypm ta-add $1 PISM.III Apollonian Objective +Exams +Study +Physics +Chemistry }; f'
+
+alias tals-pism-subjects="fypm ta-ls-mot-and-sub list 'rc.report.list.sort=entry+ project:PISM.III TYPE:Objective'"
+alias talsa-pism-subjects="task rc.report.list.sort=entry+ project:PISM.III TYPE:Objective all"
+alias tals-pism-checks="task project:PISM.III TYPE:Check list"

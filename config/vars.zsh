@@ -10,8 +10,8 @@ export TASKSLOCK=$FYSM_PERMA_LOCKS/tasks
 # -------------------------------------------------- #
 #                       FYPM
 
-export TW_DB="$DATA_DB"/con/data/taskw
-export TIMEWARRIORDB="$DATA_DB"/con/data/timew
+export TW_DB=/home/$USER/.task
+export TIMEWARRIORDB=/home/$USER/.timewarrior
 
 export WORKTIME=$(cat /var/tmp/current_work_time | sed 's/\s[->].*//g')
 

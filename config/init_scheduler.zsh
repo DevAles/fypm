@@ -3,6 +3,8 @@
 CURRENT_WT=Highlevel
 CURRENT_LGT=off
 
+TWBIN=$HOME/.config/fyw/fypm/scripts/pending
+MYBIN=$HOME/.config/fyw/fysm/scripts
 # Highlevel
 # School
 # Food
