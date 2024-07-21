@@ -62,7 +62,18 @@ alias sft_rst_poly='polybar-msg cmd restart'
 alias frc_rst_poly='killall -s KILL polybar && bspbar & disown'
 
 # Custom aliases
-alias taadd-pism-subject='f() { fypm ta-add $1 PISM.III Apollonian Objective +Study $2 $3 }; f'
+alias taadd-pism-subject='f() { 
+    fypm ta-add $1 PISM.III Apollonian Objective +Study $2 $3;
+    yes | fypm ta-add "Questions $1" PISM.III Apollonian Objective +Study $2; 
+    yes | fypm ta-add "Theory $1" PISM.III Apollonian Objective +Study $2;
+    yes | fypm ta-add "AI Active Recall $1" PISM.III Apollonian Objective +Study $2;
+}; f'
+alias taadd-sub-pism='f() {
+    fypm ta-add-sub $1 $(expr $1 + 1);
+    fypm ta-add-sub $1 $(expr $1 + 2);
+    fypm ta-add-sub $1 $(expr $1 + 3);
+}; f'
+
 alias taadd-pism-closed-exam-1='f() { fypm ta-add $1 PISM.III Apollonian Objective +Exams +Study +Math +Biology +Portuguese +Literature }; f'
 alias taadd-pism-closed-exam-2='f() { fypm ta-add $1 PISM.III Apollonian Objective +Exams +Study +Physics +Chemistry +Geography +Literature }; f'
 
