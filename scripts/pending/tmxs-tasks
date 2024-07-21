@@ -21,8 +21,8 @@ open_taskwarrior() {
     if ! tmux has-session -t "$TASK"; then
         tmux new-session -d -s "$TASK" -x "$TRM_COLS" -y "$TRM_LINES"
 
-        tmux split-window -t "$TASK" -h -l 10%
-        tmux split-window -t "$TASK":0.0 -v -l 40%
+        tmux split-window -t "$TASK" -h -l 50%
+        tmux split-window -t "$TASK" -v -l 50%
 
         tmux send-keys -t "$TASK":1.1 "$VIEWER" C-m
         tmux send-keys -t "$TASK":1.2 'perpetue_cmd fypm ta-project l' C-m
