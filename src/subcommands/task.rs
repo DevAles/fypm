@@ -2,7 +2,6 @@ use chrono::{DateTime, Datelike, Duration, Local, NaiveDate, Weekday};
 //#region           Crates
 use colored::*;
 use dialoguer::Confirm;
-use regex::Regex;
 use std::io::Write;
 use std::process::Stdio;
 use std::{fs, process::Command, str};
@@ -67,12 +66,6 @@ pub fn task_start(filter: &String) -> Result<(), FypmError> {
     filter = match_inforelat_and_sequence(&filter_json[0]).unwrap();
 
     {
-        //. DEV: Implement tascripts in Rust later
-
-        Command::new("tascripts").args([&filter]).output().unwrap();
-    }
-
-    {
         let active_tasks = get::get_current_task_json();
 
         if active_tasks.is_err() {
@@ -100,6 +93,12 @@ pub fn task_start(filter: &String) -> Result<(), FypmError> {
             .args([filter.as_str(), "start"])
             .output()
             .unwrap();
+
+        {
+            //. DEV: Implement tascripts in Rust later
+
+            Command::new("tascripts").args([&filter]).output().unwrap();
+        }
 
         Ok(())
     }
@@ -151,12 +150,25 @@ pub fn task_done(
     let confirmation = dialog::verify_selected_tasks(&selected_tasks)?;
 
     if confirmation {
-        Command::new("task")
+        let mut done_binding = Command::new("task");
+        let done_command = done_binding
             .args(args)
             .stdout(Stdio::inherit())
-            .stderr(Stdio::inherit())
-            .output()
-            .unwrap();
+            .stderr(Stdio::inherit());
+
+        if selected_tasks.len() > 2 {
+            let mut done_child = done_command.stdin(Stdio::piped()).spawn().unwrap();
+
+            done_child
+                .stdin
+                .take()
+                .unwrap()
+                .write_all("all\n".as_bytes())
+                .unwrap();
+            done_child.wait().unwrap();
+        } else {
+            done_command.output().unwrap();
+        }
     } else {
         println!("Aborting...");
     }
@@ -211,7 +223,7 @@ pub fn task_add(
     }
 
     let mut args = vec![
-        "rc.verbose=new-uuid".to_string(),
+        "rc.verbose=new-id".to_string(),
         "add".to_string(),
         description.to_string(),
         format!("project:{}", project),
@@ -225,37 +237,31 @@ pub fn task_add(
 
     let execute = Command::new("task").args(args).output();
 
-    let uuid: String;
-    {
-        let regex = Regex::new(
-            r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
-        )
-        .unwrap();
+    let id: String;
+    if let Ok(output) = execute {
+        if output.status.success() {
+            let stdout = str::from_utf8(&output.stdout).unwrap();
 
-        if let Ok(output) = execute {
-            if output.status.success() {
-                let stdout = str::from_utf8(&output.stdout).unwrap();
-
-                if let Some(captured) = regex.captures(stdout) {
-                    uuid = captured[0].to_string();
-                } else {
-                    println!("No created tasks!");
-                    panic!("{}", stdout)
-                }
-            } else {
-                panic!(
-                    "An error occurred trying to create a task: {}",
-                    str::from_utf8(&output.stderr).unwrap()
-                );
-            }
+            id = stdout
+                .trim()
+                .replace("Created task ", "")
+                .replace(".", "")
+                .to_string();
         } else {
-            let error = execute.unwrap_err();
-
-            panic!("An error occurred trying to create a task: {}", error);
+            panic!(
+                "An error occurred trying to create a task: {}",
+                str::from_utf8(&output.stderr).unwrap()
+            );
         }
+    } else {
+        let error = execute.unwrap_err();
+
+        panic!("An error occurred trying to create a task: {}", error);
     }
 
-    println!("Created task with uuid: {}!", uuid);
+    let uuid = get::get_uuids_by_filter(&id, DEFAULT_GET_JSON_OPTIONS)?[0].clone();
+
+    println!("Created task with id \"{}\"! ({})", id, uuid);
 
     Ok(uuid)
 }

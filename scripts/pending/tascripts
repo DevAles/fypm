@@ -128,8 +128,7 @@ case $(task "$1" export | jq -r '.[0].description') in
         ;;
     "Theory"*)
         before_executed
-        vivaldi-stable --app=http://localhost:5000 >> /dev/null 2>&1 & disown
-
+        obs open "" >> /dev/null 2>&1 & disown
         after_executed
         ;;
 esac
