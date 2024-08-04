@@ -14,12 +14,12 @@ if test ! -e "$INIT_LOCK" && [ "$DISPLAY" != "" ]; then
 
     "$FYPM_DIR"/config/init_scheduler.zsh
 
-    _task_poly_daemon_ >> /dev/null 2>&1 & disown
+    _task_poly_daemon_ & disown
 
     #_verify_eventual_tasks_
 
-    _verify_active_tasks_ >> /dev/null 2>&1 & disown
-    _verify_alarm_tasks_ >> "$FYSM_PERMA_LOGS/fypm/_verify_alarm_tasks_$(date +%Y-%m-%d)" 2>&1 & disown
+    # _verify_active_tasks_ >> /dev/null 2>&1 & disown
+    # _verify_alarm_tasks_ >> "$FYSM_PERMA_LOGS/fypm/_verify_alarm_tasks_$(date +%Y-%m-%d)" 2>&1 & disown
 
     wacom
     frc_rst_poly
