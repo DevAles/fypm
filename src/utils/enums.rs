@@ -17,7 +17,10 @@ pub enum TaProjectActions {
     List,
     /// Archive a project (alias: c)
     #[value(alias = "c")]
-    Archive
+    Archive,
+    /// Unarchive a project (alias: u)
+    #[value(alias = "u")]
+    Unarchive,
 }
 #[derive(ValueEnum, Clone, PartialEq)]
 pub enum TaAbandonTags {
@@ -45,9 +48,9 @@ pub enum TaSequenceTypes {
     /// Create an anime sequence
     #[value(alias = "a")]
     Anime,
-    /// Create a manga sequence
+    /// Create a Youtube playlist sequence
     #[value(alias = "yp")]
-    YTPlaylist,
+    YoutubePlaylist,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -66,29 +69,28 @@ pub enum AliasActions {
     Change,
 }
 
+#[derive(ValueEnum, Clone, PartialEq)]
+pub enum FilterActions {
+    Add,
+    List,
+    Remove,
+    Edit,
+}
 
 #[derive(Subcommand)]
 pub enum Commands {
     //#region               Systems
     /// Add a worktime
-    WtAdd {
-        worktime_name: String,
-    },
+    WtAdd { worktime_name: String },
     /// Remove a worktime
-    WtRemove {
-        worktime_name: String,
-    },
+    WtRemove { worktime_name: String },
     /// List worktimes
     WtLs,
     /// Apply a worktime
-    WtApply {
-        worktime_name: String,
-    },
+    WtApply { worktime_name: String },
 
     /// Verify tasks for inconsistencies
-    Verify {
-        script: VerifyScripts,
-    },
+    Verify { script: VerifyScripts },
 
     /// Manage tasks aliases
     Alias {
@@ -96,6 +98,12 @@ pub enum Commands {
         action: AliasActions,
         /// Filter to task to be manipulated (max: 1)
         filter: String,
+    },
+
+    /// Manage filters
+    Filter {
+        /// The action to be performed
+        action: FilterActions,
     },
 
     /// Manage instances
@@ -121,7 +129,7 @@ pub enum Commands {
     /// Add a subtask to a objective task (taadd-sub)
     TaAddSub {
         mother_task: String,
-        /// The args to be passed to taadd (description and STYLE or simply more than 1 parameter)
+        /// The args to be passed to taadd (required: description, STYLE, TYPE)
         /// or the existent subtask (1 parameter)
         other_args: Vec<String>,
         #[arg(short = 'y', long)]
@@ -176,6 +184,19 @@ pub enum Commands {
         tasks_to_done: Option<String>,
         #[arg(short = 's', long = "start")]
         tastart_filter: Option<String>,
+        /// Add an annotation to selected tasks
+        #[arg(short = 'a', long = "annotation")]
+        annotation: Option<String>,
+        /// Skip confirmation
+        #[arg(short = 'y', long = "skip")]
+        skip_confirmation: bool,
+        /// Didn't need to do a task and it's done? Tag it with this tag!
+        /// (If you're prevented from doing the task, use `taban n` even if it's no longer needed)
+        #[arg(short = 'n', long = "not-necessary")]
+        not_necessary: bool,
+        /// Have you delegated this task and it was done? Tag it with this tag!
+        #[arg(short = 'd', long = "delegated")]
+        delegated: bool,
     },
     TaSchedule {
         filter: String,
@@ -197,15 +218,16 @@ pub enum Commands {
     /// Set a task as pending, removing the "failed/abandoned/no-control" status or unarchiving it (taund)
     TaUnd {
         filter: String,
-        #[arg(short = 'c', long)]
-        unarchive: bool
+        /// Unarchive a task (alias: u)
+        #[arg(short = 'u', long = "unarchive")]
+        unarchive: bool,
     },
     TaProject {
         #[arg(value_enum)]
         action: TaProjectActions,
         /// Project || Filter. Project is required in "a && c" options. Filter is optional in "l" flag.
         #[arg(short, long)]
-        arg: Option<String>
+        arg: Option<String>,
     },
     /// Get statistics from taskwarrior (tastat-*)
     TaStatistic {
@@ -285,6 +307,7 @@ pub enum FypmReports {
     AllGoals,
     Const,
     Recurring,
+    Visual,
 }
 #[derive(EnumString, Display, Hash, PartialEq, Eq, Debug, Ord, PartialOrd)]
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
@@ -345,8 +368,6 @@ pub enum FypmUrgency {
     // Type
     #[strum(serialize = "TYPE-Eventual")]
     TypeEventual,
-    #[strum(serialize = "TYPE-SubTask")]
-    TypeSubTask,
     #[strum(serialize = "TYPE-Habit")]
     TypeHabit,
     #[strum(serialize = "TYPE-Objective")]
@@ -357,6 +378,8 @@ pub enum FypmUrgency {
     TypeCheck,
     #[strum(serialize = "TYPE-Event")]
     TypeEvent,
+    #[strum(serialize = "TYPE-Goal")]
+    TypeGoal,
 
     // Style
     #[strum(serialize = "STYLE-Apollonian")]
@@ -367,6 +390,8 @@ pub enum FypmUrgency {
     StyleDionysian,
     #[strum(serialize = "STYLE-Necessity")]
     StyleNecessity,
+    #[strum(serialize = "STYLE-Idle")]
+    StyleIdle,
 
     // Effort
     #[strum(serialize = "effort-Zero")]
@@ -392,6 +417,10 @@ pub enum FypmUrgency {
     #[strum(serialize = "quadrant-Four")]
     QuadrantNone,
 
+    // Fypm Tags
+    #[strum(serialize = "SUBTASK")]
+    SubTask,
+
     // Urgency Increment
     UrgP5,
     UrgP10,
@@ -408,4 +437,3 @@ pub enum FypmUrgency {
     UrgN30,
     UrgN100,
 }
-

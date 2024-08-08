@@ -4,9 +4,10 @@ use colored::*;
 use dialoguer::Confirm;
 use std::io::Write;
 use std::process::Stdio;
+use std::vec;
 use std::{fs, process::Command, str};
 
-use crate::func::dialog;
+use crate::func::{command, dialog};
 //#endregion
 //#region           Modules
 use crate::func::{
@@ -106,6 +107,10 @@ pub fn task_start(filter: &String) -> Result<(), FypmError> {
 pub fn task_done(
     filter: &Option<String>,
     tastart_filter: &Option<String>,
+    annotation: &Option<String>,
+    skip_confirmation: &bool,
+    not_necessary: &bool,
+    delegated: &bool,
 ) -> Result<(), FypmError> {
     let mut args = vec!["rc.confirmation=0", "rc.recurrence.confirmation=0"];
     let selected_tasks: Vec<TaskWarriorExported>;
@@ -145,14 +150,69 @@ pub fn task_done(
         .collect::<Vec<&str>>()
         .join(" ");
 
-    args.extend([join_uuids.as_str(), "done"]);
+    args.extend([join_uuids.as_str()]);
 
-    let confirmation = dialog::verify_selected_tasks(&selected_tasks)?;
+    let confirmation: bool;
+
+    if *skip_confirmation {
+        confirmation = true;
+    } else {
+        confirmation = dialog::verify_selected_tasks(&selected_tasks)?;
+    }
 
     if confirmation {
+        if let Some(annotation) = annotation {
+            action::annotate("task", &join_uuids, annotation, true)?;
+        }
+
+        // Tags logic
+        {
+            let tags: Vec<&str> = vec![];
+
+            if *not_necessary {
+                args.push("+NotNecessary");
+            }
+
+            if *delegated {
+                args.push("+Delegated");
+            }
+
+            if tags.len() == 2 {
+                return Err(FypmError {
+                    message: "You are trying to mark a task with two tags! Are you crazy?"
+                        .to_string(),
+                    kind: FypmErrorKind::InvalidInput,
+                });
+            } else if tags.len() == 1 {
+                let mut tags_args = args.clone();
+
+                tags_args.push("modify");
+                tags_args.extend(tags);
+
+                let mut tag_binding = Command::new("task");
+                let tag_command = tag_binding
+                    .args(tags_args)
+                    .stdout(Stdio::inherit())
+                    .stderr(Stdio::inherit());
+
+                let mut tag_child = tag_command.stdin(Stdio::piped()).spawn().unwrap();
+
+                tag_child
+                    .stdin
+                    .take()
+                    .unwrap()
+                    .write_all("all\n".as_bytes())
+                    .unwrap();
+                tag_child.wait().unwrap();
+            }
+        }
+        let mut done_args = args.clone();
+
+        done_args.push("done");
+
         let mut done_binding = Command::new("task");
         let done_command = done_binding
-            .args(args)
+            .args(done_args)
             .stdout(Stdio::inherit())
             .stderr(Stdio::inherit());
 
@@ -282,11 +342,14 @@ pub fn task_add_sub(
         let subtask_uuid = get_subtask_uuid.get(0).unwrap();
 
         Command::new("task")
-            .args([subtask_uuid.as_str(), "modify", "TYPE:SubTask"])
+            .args([subtask_uuid.as_str(), "modify", "+SUBTASK"])
             .output()
             .unwrap();
-    } else if other_args.len() >= 2 {
+    } else if other_args.len() >= 3 {
         let project: &String;
+        let description = other_args.get(0).unwrap();
+        let style = other_args.get(1).unwrap();
+        let r#type = other_args.get(2).unwrap();
 
         if let Some(project_arg) = &mother_task_json.project {
             project = project_arg;
@@ -294,18 +357,23 @@ pub fn task_add_sub(
             panic!("The specified mother doesn't have a project setted... Are you writing this stuff right?");
         }
 
+        let args = other_args.get(3..).unwrap().to_vec();
+
         let uuid = task_add(
-            other_args.get(0).unwrap(),
+            description,
             project,
-            other_args.get(1).unwrap(),
-            &"SubTask".to_string(),
-            &other_args.get(2..).map(|x| x.to_vec()),
+            style,
+            r#type,
+            &Some(args),
             skip_confirmation,
         )?;
 
         subtask = uuid;
     } else {
-        panic!("You specified a wrong number of arguments! You don't know how to read documentation, do you? :P");
+        return Err(FypmError {
+            message: "You specified a wrong number of arguments! You don't know how to read documentation, do you? :P".to_string(),
+            kind: FypmErrorKind::InvalidInput
+        });
     }
 
     Command::new("task")
@@ -319,6 +387,7 @@ pub fn task_add_sub(
             &subtask,
             &"modify".to_string(),
             &format!("MOTHER:{}", mother_task_json.uuid),
+            &"+SUBTASK".to_string(),
         ])
         .output()
         .unwrap();
@@ -597,7 +666,8 @@ pub fn task_list_mother_and_subtasks(
                 .args([
                     tasks_filter.as_str(),
                     "rc.verbose=0",
-                    format!("rc.report.{modifier}.sort=TYPE-,entry+").as_str(),
+                    "rc.urgency.user.tag.MOTHER.coefficient=1100",
+                    format!("rc.report.{modifier}.sort=urgency-").as_str(),
                     format!("{modifier}").as_str(),
                 ])
                 .stdout(Stdio::inherit())
@@ -823,27 +893,12 @@ pub fn task_abandon(
             .stderr(Stdio::inherit());
 
         if tasks_count > 2 {
-            let mut modify_child = modify_command.stdin(Stdio::piped()).spawn().unwrap();
+            command::stdin_all(modify_command).unwrap();
 
-            modify_child
-                .stdin
-                .take()
-                .unwrap()
-                .write_all("all\n".as_bytes())
-                .unwrap();
-            modify_child.wait().unwrap();
-
-            let mut delete_child = delete_command.stdin(Stdio::piped()).spawn().unwrap();
-
-            delete_child
-                .stdin
-                .take()
-                .unwrap()
-                .write_all("all\n".as_bytes())
-                .unwrap();
-            delete_child.wait().unwrap();
+            command::stdin_all(delete_command).unwrap();
         } else {
             modify_command.output().unwrap();
+
             delete_command.output().unwrap();
         }
     } else {
@@ -963,8 +1018,14 @@ pub fn task_unschedule(
     Ok(())
 }
 pub fn task_und(filter: &String, unarchive: &bool) -> Result<(), FypmError> {
-    let tasks = get::get_json_by_filter(filter, None)?;
-    let tasks_count: usize = tasks.len();
+    let tasks = if *unarchive {
+        println!("Unarchive option is true! Filtering for archived tasks...");
+
+        get::get_json_by_filter(format!("(+Archived and ({}))", filter).as_str(), None)?
+    } else {
+        get::get_json_by_filter(filter, None)?
+    };
+
     let confirmation = dialog::verify_selected_tasks(&tasks)?;
 
     if confirmation {
@@ -978,7 +1039,9 @@ pub fn task_und(filter: &String, unarchive: &bool) -> Result<(), FypmError> {
         ];
 
         if *unarchive {
-            args.extend(["-Archived"]);
+            action::unarchive(tasks)?;
+
+            return Ok(());
         } else {
             args.extend(["-Failed", "-Abandoned", "-NoControl"]);
         }
@@ -986,16 +1049,8 @@ pub fn task_und(filter: &String, unarchive: &bool) -> Result<(), FypmError> {
         let mut modify_binding = Command::new("task");
         let modify_command = modify_binding.args(args).stderr(Stdio::inherit());
 
-        if tasks_count > 2 {
-            let mut modify_child = modify_command.stdin(Stdio::piped()).spawn().unwrap();
-
-            modify_child
-                .stdin
-                .take()
-                .unwrap()
-                .write_all("all\n".as_bytes())
-                .unwrap();
-            modify_child.wait().unwrap();
+        if tasks.len() > 2 {
+            command::stdin_all(modify_command).unwrap();
         } else {
             modify_command.output().unwrap();
         }
@@ -1006,6 +1061,11 @@ pub fn task_und(filter: &String, unarchive: &bool) -> Result<(), FypmError> {
     Ok(())
 }
 pub fn task_project(action: &TaProjectActions, arg: &Option<String>) -> Result<(), FypmError> {
+    let no_project_specified = FypmError {
+        message: "Please provide a project name!".to_string(),
+        kind: FypmErrorKind::InvalidInput,
+    };
+
     match *action {
         TaProjectActions::List => {
             let mut args = Vec::new();
@@ -1041,7 +1101,7 @@ pub fn task_project(action: &TaProjectActions, arg: &Option<String>) -> Result<(
                     )?;
                 }
             } else {
-                panic!("Please provide a project name!");
+                return Err(no_project_specified);
             }
         }
         TaProjectActions::Archive => {
@@ -1058,6 +1118,29 @@ pub fn task_project(action: &TaProjectActions, arg: &Option<String>) -> Result<(
                         &None,
                     )?;
                 }
+            } else {
+                return Err(no_project_specified);
+            }
+        }
+        TaProjectActions::Unarchive => {
+            if let Some(project) = arg {
+                let confirmation: bool = Confirm::new()
+                    .with_prompt(format!("Do you want to unarchive '{}' project?", project))
+                    .interact()
+                    .unwrap();
+
+                if confirmation {
+                    println!("Unarchive option is true! Filtering for archived tasks...");
+
+                    let tasks: Vec<TaskWarriorExported> = get::get_json_by_filter(
+                        format!("(project:{} and +Archived)", project).as_str(),
+                        None,
+                    )?;
+
+                    action::unarchive(tasks)?;
+                }
+            } else {
+                return Err(no_project_specified);
             }
         }
     }

@@ -1,10 +1,12 @@
 use chrono::NaiveDate;
-use rusqlite::Connection;
+use diesel::Connection;
+use diesel::SqliteConnection;
 
 use crate::func::action;
 use crate::func::date;
 use crate::handlers;
 use crate::handlers::aliases;
+use crate::handlers::filters::FiltersHandler;
 use crate::subcommands::instance;
 use crate::subcommands::worktime;
 use crate::subcommands::worktime::WorktimeHandler;
@@ -13,7 +15,7 @@ use crate::utils::enums;
 use crate::utils::enums::AliasActions;
 use crate::utils::enums::{Commands, TimewAction};
 use crate::utils::err::FypmError;
-use crate::MAIN_DB_FILE;
+use crate::DATABASE_URL;
 
 pub fn match_subcommand(command: &Commands) -> Result<(), FypmError> {
     match command {
@@ -32,27 +34,37 @@ pub fn match_subcommand(command: &Commands) -> Result<(), FypmError> {
             }
         }
 
-        Commands::WtAdd { worktime_name } => {
-            WorktimeHandler {
-                conn: Connection::open(MAIN_DB_FILE.to_string()).unwrap().into(),
+        Commands::Filter { action } => {
+            let conn = &mut SqliteConnection::establish(DATABASE_URL.as_str()).unwrap();
+
+            match action {
+                enums::FilterActions::Add => FiltersHandler::add(conn),
+                enums::FilterActions::List => FiltersHandler::list(conn),
+                enums::FilterActions::Remove => FiltersHandler::remove(conn),
+                enums::FilterActions::Edit => FiltersHandler::edit(conn),
             }
-            .add(worktime_name)?;
+        },
+
+        Commands::WtAdd { worktime_name } => {
+            WorktimeHandler::add(
+                &mut SqliteConnection::establish(DATABASE_URL.as_str()).unwrap(),
+                worktime_name,
+            )?;
 
             Ok(())
         }
         Commands::WtRemove { worktime_name } => {
-            WorktimeHandler {
-                conn: Connection::open(MAIN_DB_FILE.to_string()).unwrap().into(),
-            }
-            .remove(worktime_name)?;
+            WorktimeHandler::remove(
+                &mut SqliteConnection::establish(DATABASE_URL.as_str()).unwrap(),
+                worktime_name,
+            )?;
 
             Ok(())
         }
         Commands::WtLs => {
-            WorktimeHandler {
-                conn: Connection::open(MAIN_DB_FILE.to_string()).unwrap().into(),
-            }
-            .list()?;
+            WorktimeHandler::list(
+                &mut SqliteConnection::establish(DATABASE_URL.as_str()).unwrap(),
+            )?;
 
             Ok(())
         }
@@ -166,7 +178,18 @@ pub fn match_subcommand(command: &Commands) -> Result<(), FypmError> {
         Commands::TaDone {
             tasks_to_done,
             tastart_filter,
-        } => task::task_done(tasks_to_done, tastart_filter),
+            annotation,
+            skip_confirmation,
+            not_necessary,
+            delegated,
+        } => task::task_done(
+            tasks_to_done,
+            tastart_filter,
+            annotation,
+            skip_confirmation,
+            not_necessary,
+            delegated,
+        ),
         Commands::TaAnnotate { filter, annotation } => {
             action::annotate("task", filter, annotation, false)
         }
